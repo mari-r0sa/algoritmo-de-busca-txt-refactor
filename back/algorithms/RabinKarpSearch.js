@@ -9,6 +9,10 @@ export default class RabinKarpSearch extends SearchStrategy {
     let comparisons = 0;
     const matches = [];
 
+    const pre = this._ensureInputs(text, pattern);
+    if (pre.skip) return pre.result;
+    const start = pre.start;
+
     for (let i = 0; i < m - 1; i++) {
       h = (h * base) % prime;
     }
@@ -17,8 +21,6 @@ export default class RabinKarpSearch extends SearchStrategy {
       pHash = (base * pHash + pattern.charCodeAt(i)) % prime;
       tHash = (base * tHash + text.charCodeAt(i)) % prime;
     }
-
-    const start = performance.now();
 
     for (let i = 0; i <= n - m; i++) {
       if (pHash === tHash) {
@@ -36,19 +38,16 @@ export default class RabinKarpSearch extends SearchStrategy {
       }
 
       if (i < n - m) {
-        tHash =
-          (base * (tHash - text.charCodeAt(i) * h) +
-            text.charCodeAt(i + m)) %
-          prime;
+        tHash = (
+            base *
+            (tHash - text.charCodeAt(i) * h) +
+            text.charCodeAt(i + m)
+            ) % prime;
 
         if (tHash < 0) tHash += prime;
       }
     }
 
-    return {
-      matches,
-      comparisons,
-      time: performance.now() - start
-    };
+    return this._createResult(matches, comparisons, start);
   }
 }
