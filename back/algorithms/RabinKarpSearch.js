@@ -1,10 +1,10 @@
 import SearchStrategy from "./SearchStrategy";
 
 export default class RabinKarpSearch extends SearchStrategy {
-  search(text, pattern) {
-    const prime = 101;
-    const base = 256;
+  static PRIME = 101;
+  static BASE = 256;
 
+  search(text, pattern) {
     const pre = this._ensureInputs(text, pattern);
     if (pre.skip) return pre.result;
 
@@ -13,52 +13,76 @@ export default class RabinKarpSearch extends SearchStrategy {
     const m = pattern.length;
     const n = text.length;
 
-    let pHash = 0;
-    let tHash = 0;
-    let h = 1;
+    const base = RabinKarpSearch.BASE;
+    const prime = RabinKarpSearch.PRIME;
+
+    let h = this._computeH(m, base, prime);
+
+    const { pHash, tHash: initialTHash } =
+      this._computeInitialHashes(text, pattern, m, base, prime);
+
+    let tHash = initialTHash;
 
     let comparisons = 0;
     const matches = [];
 
-    // h = base^(m-1) % prime
+    for (let i = 0; i <= n - m; i++) {
+      if (pHash === tHash) {
+        const { isMatch, comps } = this._checkMatch(text, pattern, i, m);
+        comparisons += comps;
+
+        if (isMatch) {
+          matches.push(i);
+        }
+      }
+
+      if (i < n - m) {
+        tHash = this._updateHash(tHash, text, i, m, h, base, prime);
+      }
+    }
+
+    return this._createResult(matches, comparisons, start);
+  }
+
+  _computeH(m, base, prime) {
+    let h = 1;
     for (let i = 0; i < m - 1; i++) {
       h = (h * base) % prime;
     }
+    return h;
+  }
 
-    // cálculo inicial dos hashes
+  _computeInitialHashes(text, pattern, m, base, prime) {
+    let pHash = 0;
+    let tHash = 0;
+
     for (let i = 0; i < m; i++) {
       pHash = (base * pHash + pattern.charCodeAt(i)) % prime;
       tHash = (base * tHash + text.charCodeAt(i)) % prime;
     }
 
-    for (let i = 0; i <= n - m; i++) {
-      if (pHash === tHash) {
-        let match = true;
+    return { pHash, tHash };
+  }
 
-        for (let j = 0; j < m; j++) {
-          comparisons++;
-          if (text[i + j] !== pattern[j]) {
-            match = false;
-            break;
-          }
-        }
+  _updateHash(tHash, text, i, m, h, base, prime) {
+    let newHash =
+      (base * (tHash - text.charCodeAt(i) * h) +
+        text.charCodeAt(i + m)) %
+      prime;
 
-        if (match) {
-          matches.push(i);
-        }
-      }
+    return newHash < 0 ? newHash + prime : newHash;
+  }
 
-      // Rolling hash
-      if (i < n - m) {
-        tHash =
-          (base * (tHash - text.charCodeAt(i) * h) +
-            text.charCodeAt(i + m)) %
-          prime;
+  _checkMatch(text, pattern, startIndex, m) {
+    let comparisons = 0;
 
-        if (tHash < 0) tHash += prime;
+    for (let j = 0; j < m; j++) {
+      comparisons++;
+      if (text[startIndex + j] !== pattern[j]) {
+        return { isMatch: false, comps: comparisons };
       }
     }
 
-    return this._createResult(matches, comparisons, start);
+    return { isMatch: true, comps: comparisons };
   }
 }

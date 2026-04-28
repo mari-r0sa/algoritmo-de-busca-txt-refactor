@@ -9,16 +9,25 @@ export default class NaiveSearch extends SearchStrategy {
     if (pre.skip) return pre.result;
     const start = pre.start;
 
-    for (let i = 0; i <= text.length - pattern.length; i++) {
+    const n = text.length;
+    const m = pattern.length;
+
+    for (let i = 0; i <= n - m; i++) {
       let j = 0;
 
-      while (j < pattern.length) {
+      while (j < m) {
+        const textChar = text[i + j];
+        const patternChar = pattern[j];
+
         comparisons++;
-        if (text[i + j] !== pattern[j]) break;
+        if (textChar !== patternChar) break;
+
         j++;
       }
 
-      if (j === pattern.length) matches.push(i);
+      if (j === m) {
+        matches.push(i);
+      }
     }
 
     return this._createResult(matches, comparisons, start);
@@ -28,18 +37,25 @@ export default class NaiveSearch extends SearchStrategy {
     const pre = this._ensureInputs(text, pattern);
     if (pre.skip) return;
 
-    for (let i = 0; i <= text.length - pattern.length; i++) {
+    const n = text.length;
+    const m = pattern.length;
+
+    for (let i = 0; i <= n - m; i++) {
       let j = 0;
 
-      while (j < pattern.length) {
+      while (j < m) {
+        const textChar = text[i + j];
+        const patternChar = pattern[j];
+
         yield {
           i,
           j,
-          textChar: text[i + j],
-          patternChar: pattern[j],
+          textChar,
+          patternChar,
         };
 
-        if (text[i + j] !== pattern[j]) break;
+        if (textChar !== patternChar) break;
+
         j++;
       }
     }
